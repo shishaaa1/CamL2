@@ -8,4 +8,12 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="Images\cam.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\cam.ico" />
+  </ItemGroup>
+
 </Project>

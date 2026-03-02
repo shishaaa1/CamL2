@@ -34,13 +34,11 @@ namespace L2App
             {
                 using Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 sock.Connect(host, port);
-                Console.WriteLine($"✓ TCP подключён к {host}:{port}");
-
-                sock.Close();
+                Console.WriteLine($"TCP подключён к {host}:{port}");
             }
             catch (SocketException ex)
             {
-                Console.WriteLine($"✗ TCP ошибка: {ex.Message}");
+                Console.WriteLine($"TCP ошибка: {ex.Message}");
             }
         }
 
@@ -50,7 +48,7 @@ namespace L2App
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                Console.WriteLine("✗ Строка подключения не найдена в конфигурации!");
+                Console.WriteLine("Строка подключения не найдена в конфигурации!");
                 return;
             }
 
@@ -62,7 +60,7 @@ namespace L2App
                 await using var command = new NpgsqlCommand("SELECT NOW()", connection);
                 var serverTime = await command.ExecuteScalarAsync();
 
-                Console.WriteLine($"✓ Подключение к PostgreSQL успешно!");
+                Console.WriteLine($"Подключение к PostgreSQL успешно!");
                 Console.WriteLine($"   Серверное время: {serverTime}");
             }
             catch (NpgsqlException ex)

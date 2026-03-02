@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:WebView"
         mc:Ignorable="d"
         Title="Мастер камера" Height="450" Width="800"
-        Icon="/Images/Camera.ico">
+        Icon="/Images/cam.ico">
     <Grid>
-        <Frame x:Name="frame"/>
+        <Frame x:Name="frame" NavigationUIVisibility="Hidden"/>
     </Grid>
 </Window>

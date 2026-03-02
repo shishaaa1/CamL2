@@ -23,7 +23,7 @@ namespace WebView
         }
         public void OpenPage()
         {
-            frame.Navigate(new Uri("Information.xaml", UriKind.Relative));
+            frame.Navigate(new Uri("Pages/CameraPage.xaml", UriKind.Relative));
         }
     }
 }
