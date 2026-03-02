@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36616.10 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject", "TestProject\TestProject.csproj", "{B97E9BD5-466C-4A4C-9D10-D14A0246E8C7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "L2App", "TestProject\L2App.csproj", "{B97E9BD5-466C-4A4C-9D10-D14A0246E8C7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebView", "WebView\WebView.csproj", "{A8BA0139-9173-4B30-9E2A-84FB54BFA9DE}"
 EndProject
