@@ -18,7 +18,22 @@ namespace WebView
         private readonly JsonSerializerOptions _jsonOptions;
         
         private const string DebugSessionId = "49c081";
-        private const string DebugLogPath = @"C:\Users\gada\Desktop\TestProject\debug-49c081.log";
+        private static readonly string DebugLogPath = InitLogPath();
+
+        private static string InitLogPath()
+        {
+            try
+            {
+                var baseDir = AppContext.BaseDirectory;
+                var logDir = Path.Combine(baseDir, "logs");
+                Directory.CreateDirectory(logDir);
+                return Path.Combine(logDir, $"webview-{DebugSessionId}.log");
+            }
+            catch
+            {
+                return $"webview-{DebugSessionId}.log";
+            }
+        }
         
         private void DebugLog(string location, string message, object? data = null)
         {
@@ -301,15 +316,21 @@ namespace WebView
 
         protected override async void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            e.Cancel = true;
-            
-            if (_webSocket != null && _webSocket.State == WebSocketState.Open)
+            // даём окну реально закрыться, просто выполняем аккуратный cleanup
+            try
             {
-                await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
-            }
+                _clockTimer.Stop();
+                _reconnectTimer.Stop();
 
-            _clockTimer.Stop();
-            _reconnectTimer.Stop();
+                if (_webSocket != null && _webSocket.State == WebSocketState.Open)
+                {
+                    await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+                }
+            }
+            catch
+            {
+                // игнорируем ошибки при закрытии, чтобы не блокировать выход
+            }
 
             base.OnClosing(e);
         }
@@ -326,7 +347,17 @@ namespace WebView
     {
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
-        public bool IsMaster { get; set; }
+
+        private bool _isMaster;
+        public bool IsMaster
+        {
+            get => _isMaster;
+            set
+            {
+                _isMaster = value;
+                OnPropertyChanged(nameof(IsMaster));
+            }
+        }
 
         private bool _isOnline;
         public bool IsOnline

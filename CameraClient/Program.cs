@@ -3,6 +3,8 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Collections.Generic;
+using L2App.Database;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 
@@ -16,7 +18,7 @@ namespace CameraClient
         private static bool _isMaster;
         private static string _dbHost = "127.0.0.1";
         private static int _dbPort = 5432;
-        private static string _dbDatabase = "L2";
+        private static string _dbDatabase = "postgres";
         private static string _dbUsername = "postgres";
         private static string _dbPassword = "postgres";
         private static int _masterAppPort = 9000;
@@ -28,7 +30,23 @@ namespace CameraClient
 
         #region agent log
         private const string AgentDebugSessionId = "49c081";
-        private const string AgentDebugLogPath = @"C:\Users\gada\Desktop\TestProject\debug-49c081.log";
+        private static readonly string AgentDebugLogPath = InitLogPath();
+
+        private static string InitLogPath()
+        {
+            try
+            {
+                var baseDir = AppContext.BaseDirectory;
+                var logDir = Path.Combine(baseDir, "logs");
+                Directory.CreateDirectory(logDir);
+                return Path.Combine(logDir, $"cameraclient-{AgentDebugSessionId}.log");
+            }
+            catch
+            {
+                return $"cameraclient-{AgentDebugSessionId}.log";
+            }
+        }
+
         private static void AgentLog(string hypothesisId, string location, string message, object? data = null, string runId = "pre")
         {
             try
@@ -47,7 +65,10 @@ namespace CameraClient
                 };
                 File.AppendAllText(AgentDebugLogPath, JsonSerializer.Serialize(payload) + Environment.NewLine, Encoding.UTF8);
             }
-            catch { }
+            catch
+            {
+                // не даём логгеру уронить клиент
+            }
         }
         #endregion
 
@@ -62,7 +83,7 @@ namespace CameraClient
             _isMaster = GetArgument(args, "--ismaster")?.ToLower() == "true";
             _dbHost = GetArgument(args, "--dbhost") ?? "127.0.0.1";
             _dbPort = int.Parse(GetArgument(args, "--dbport") ?? "5432");
-            _dbDatabase = GetArgument(args, "--dbdatabase") ?? "L2";
+            _dbDatabase = GetArgument(args, "--dbdatabase") ?? "postgres";
             _dbUsername = GetArgument(args, "--dbusername") ?? "postgres";
             _dbPassword = GetArgument(args, "--dbpassword") ?? "postgres";
             _masterAppPort = int.Parse(GetArgument(args, "--masterport") ?? "8080");
@@ -298,23 +319,52 @@ namespace CameraClient
         {
             Console.WriteLine($"Камера {_cameraId} начинает работу...");
 
-            var connectionString = $"Host={_dbHost};Port={_dbPort};Database={_dbDatabase};Username={_dbUsername};Password={_dbPassword}";
-            Console.WriteLine($"Подключение к БД: {connectionString}");
+            var dbSettings = new DBSettings
+            {
+                Host = _dbHost,
+                Port = _dbPort,
+                Database = _dbDatabase,
+                Username = _dbUsername,
+                Password = _dbPassword
+            };
+            Console.WriteLine($"Подключение к БД: {dbSettings.ConnectionStrings}");
+
             var gtinErrorRate = _configuration.GetValue<double>("Validation:GtinErrorRate", 0.01);
             var snErrorRate = _configuration.GetValue<double>("Validation:SerialNumberErrorRate", 0.0005);
             var cryptoErrorRate = _configuration.GetValue<double>("Validation:CryptoFormatErrorRate", 0.00001);
+
+            IReadOnlyList<CameraCodeRecord> codes;
+            try
+            {
+                var repository = new CameraDataRepository(dbSettings);
+                codes = await repository.GetAllCodesAsync(_cameraId);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Камера {_cameraId}: ошибка чтения данных из БД: {ex.Message}");
+                Console.WriteLine("Нажмите любую клавишу для выхода...");
+                Console.ReadKey();
+                return;
+            }
+
+            if (codes.Count == 0)
+            {
+                Console.WriteLine($"Камера {_cameraId}: в БД нет данных для отправки.");
+            }
+
             int messageCount = 0;
-            while (messageCount < 100)
+            foreach (var record in codes)
             {
                 var delay = _random.Next(10, 90);
                 await Task.Delay(delay);
                 messageCount++;
-                var gtin = GenerateGtin(_random, gtinErrorRate);
-                var serialNumber = GenerateSerialNumber(_random, snErrorRate);
-                var cryptoCode = GenerateCryptoCode(_random, cryptoErrorRate);
+
+                var gtin = ApplyGtinError(record.Gtin, _random, gtinErrorRate);
+                var serialNumber = ApplySerialError(record.SerialNumber, _random, snErrorRate);
+                var cryptoCode = ApplyCryptoError(record.CryptoCode, _random, cryptoErrorRate);
                 var isValid = !gtin.Contains("INVALID") && !serialNumber.Contains("INVALID") && !cryptoCode.Contains("INVALID");
                 var validationResult = isValid ? "OK" : GetValidationError(gtin, serialNumber, cryptoCode);
-                Console.WriteLine($"Камера {_cameraId}: Сообщение #{messageCount} (GTIN={gtin}, SN={serialNumber}, Valid={isValid})");
+                Console.WriteLine($"Камера {_cameraId}: Сообщение #{messageCount} (GTIN={gtin}, SN={serialNumber}, CODE={cryptoCode}, Valid={isValid})");
                 await SendDataToMasterAppAsync(gtin, serialNumber, cryptoCode, isValid, validationResult);
             }
             Console.WriteLine($"Камера {_cameraId} завершила работу");
@@ -322,39 +372,25 @@ namespace CameraClient
             Console.ReadKey();
         }
 
-        static string GenerateGtin(Random random, double errorRate)
+        static string ApplyGtinError(string sourceGtin, Random random, double errorRate)
         {
             if (random.NextDouble() < errorRate)
                 return "INVALID_GTIN_" + random.Next(1000, 9999);
-            var gtin = new StringBuilder();
-            for (int i = 0; i < 13; i++)
-            {
-                gtin.Append(random.Next(0, 10));
-            }
-            int sum = 0;
-            for (int i = 0; i < 13; i++)
-            {
-                sum += (gtin[i] - '0') * (i % 2 == 0 ? 1 : 3);
-            }
-            int checkDigit = (10 - (sum % 10)) % 10;
-            gtin.Append(checkDigit);
-            return gtin.ToString();
+            return sourceGtin;
         }
 
-        static string GenerateSerialNumber(Random random, double errorRate)
+        static string ApplySerialError(string sourceSerial, Random random, double errorRate)
         {
             if (random.NextDouble() < errorRate)
                 return "INVALID_SN_" + random.Next(1000, 9999);
-            return "SN" + random.Next(100000, 999999);
+            return sourceSerial;
         }
 
-        static string GenerateCryptoCode(Random random, double errorRate)
+        static string ApplyCryptoError(string sourceCrypto, Random random, double errorRate)
         {
             if (random.NextDouble() < errorRate)
                 return "INVALID_CRYPTO";
-            var bytes = new byte[32];
-            random.NextBytes(bytes);
-            return Convert.ToBase64String(bytes);
+            return sourceCrypto;
         }
         static string GetValidationError(string gtin, string sn, string crypto)
         {

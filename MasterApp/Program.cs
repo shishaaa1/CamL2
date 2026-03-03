@@ -17,7 +17,23 @@ namespace MasterApp
 
         #region agent log
         private const string AgentDebugSessionId = "49c081";
-        private const string AgentDebugLogPath = @"C:\Users\gada\Desktop\TestProject\debug-49c081.log";
+        private static readonly string AgentDebugLogPath = InitLogPath();
+
+        private static string InitLogPath()
+        {
+            try
+            {
+                var baseDir = AppContext.BaseDirectory;
+                var logDir = Path.Combine(baseDir, "logs");
+                Directory.CreateDirectory(logDir);
+                return Path.Combine(logDir, "masterapp-49c081.log");
+            }
+            catch
+            {
+                return "masterapp-49c081.log";
+            }
+        }
+
         private static void AgentLog(string hypothesisId, string location, string message, object? data = null, string runId = "pre")
         {
             try
@@ -36,7 +52,10 @@ namespace MasterApp
                 };
                 File.AppendAllText(AgentDebugLogPath, System.Text.Json.JsonSerializer.Serialize(payload) + Environment.NewLine, System.Text.Encoding.UTF8);
             }
-            catch { }
+            catch
+            {
+                // если даже лог не пишется — не роняем приложение
+            }
         }
         #endregion
 
@@ -153,17 +172,42 @@ namespace MasterApp
                 var dbPassword = cameraConfig["Database:Password"];
                 var baseDir = AppContext.BaseDirectory;
                 var solutionRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
-                var cameraBinDir = Path.Combine(solutionRoot, "CameraClient", "bin", "Debug", "net8.0");
-                var cameraExePath = Path.Combine(cameraBinDir, "CameraClient.exe");
-                if (!File.Exists(cameraExePath))
+
+                // Ищем CameraClient в нескольких типичных местах
+                var candidates = new List<(string binDir, string exePath)>
                 {
-                    var altCameraBinDir = Path.Combine(solutionRoot, "bin", "Debug", "CameraClient");
-                    var altCameraExePath = Path.Combine(altCameraBinDir, "CameraClient.exe");
-                    if (File.Exists(altCameraExePath))
+                    (Path.Combine(solutionRoot, "CameraClient", "bin", "Debug", "net8.0"),
+                     Path.Combine(solutionRoot, "CameraClient", "bin", "Debug", "net8.0", "CameraClient.exe")),
+                    (Path.Combine(solutionRoot, "CameraClient", "bin", "Debug", "net8.0-windows"),
+                     Path.Combine(solutionRoot, "CameraClient", "bin", "Debug", "net8.0-windows", "CameraClient.exe")),
+                    (Path.Combine(solutionRoot, "bin", "Debug", "CameraClient"),
+                     Path.Combine(solutionRoot, "bin", "Debug", "CameraClient", "CameraClient.exe"))
+                };
+
+                string? cameraBinDir = null;
+                string? cameraExePath = null;
+
+                foreach (var (binDir, exePathCandidate) in candidates)
+                {
+                    if (File.Exists(exePathCandidate))
                     {
-                        cameraBinDir = altCameraBinDir;
-                        cameraExePath = altCameraExePath;
+                        cameraBinDir = binDir;
+                        cameraExePath = exePathCandidate;
+                        break;
                     }
+                }
+
+                if (cameraBinDir == null || cameraExePath == null || !Directory.Exists(cameraBinDir))
+                {
+                    Console.WriteLine($"Ошибка запуска камеры {id}: не найден CameraClient.exe. Ожидаемые пути:");
+                    foreach (var (binDir, exe) in candidates)
+                    {
+                        Console.WriteLine($"  {exe}");
+                    }
+                    AgentLog("M_CAM_ERR", "MasterApp/Program.cs:StartCameraProcessAsync",
+                        "Camera executable not found",
+                        new { id, isMaster, solutionRoot, candidates }, "pre");
+                    return null;
                 }
 
                 var process = new Process
