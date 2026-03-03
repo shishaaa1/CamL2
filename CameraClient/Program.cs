@@ -24,8 +24,6 @@ namespace CameraClient
         private static ClientWebSocket? _masterAppClient;
         private static TcpListener? _slaveListener;
         private static List<TcpClient> _connectedSlaves = new();
-        
-        // Общий Random с уникальным seed для каждой камеры
         private static Random _random = new Random(Environment.TickCount ^ Guid.NewGuid().GetHashCode());
 
         #region agent log
@@ -127,11 +125,7 @@ namespace CameraClient
                 });
             Console.WriteLine($"Сервер запущен. Ожидание подключений ведомых камер...");
             await BroadcastMasterReadyAsync();
-            
-            // Подключаемся к MasterApp сначала
             await ConnectToMasterAppAsync();
-            
-            // Запускаем прием подключений от ведомых и ждем 3 секунды для подключения всех
             _ = AcceptSlavesAsync();
             await Task.Delay(3000);
             
@@ -140,8 +134,6 @@ namespace CameraClient
             {
                 await SendStartSignalAsync(client);
             }
-            
-            // Начинаем отправку данных мастер-камерой
             await StartCameraWorkAsync(true);
         }
 
@@ -312,26 +304,19 @@ namespace CameraClient
             var snErrorRate = _configuration.GetValue<double>("Validation:SerialNumberErrorRate", 0.0005);
             var cryptoErrorRate = _configuration.GetValue<double>("Validation:CryptoFormatErrorRate", 0.00001);
             int messageCount = 0;
-
-            // Все камеры отправляют данные в MasterApp асинхронно
             while (messageCount < 100)
             {
                 var delay = _random.Next(10, 90);
                 await Task.Delay(delay);
-
                 messageCount++;
                 var gtin = GenerateGtin(_random, gtinErrorRate);
                 var serialNumber = GenerateSerialNumber(_random, snErrorRate);
                 var cryptoCode = GenerateCryptoCode(_random, cryptoErrorRate);
                 var isValid = !gtin.Contains("INVALID") && !serialNumber.Contains("INVALID") && !cryptoCode.Contains("INVALID");
                 var validationResult = isValid ? "OK" : GetValidationError(gtin, serialNumber, cryptoCode);
-
                 Console.WriteLine($"Камера {_cameraId}: Сообщение #{messageCount} (GTIN={gtin}, SN={serialNumber}, Valid={isValid})");
-
-                // Все камеры (и мастер, и ведомые) отправляют данные в MasterApp
                 await SendDataToMasterAppAsync(gtin, serialNumber, cryptoCode, isValid, validationResult);
             }
-
             Console.WriteLine($"Камера {_cameraId} завершила работу");
             Console.WriteLine("Нажмите любую клавишу для выхода...");
             Console.ReadKey();
@@ -360,7 +345,6 @@ namespace CameraClient
         {
             if (random.NextDouble() < errorRate)
                 return "INVALID_SN_" + random.Next(1000, 9999);
-
             return "SN" + random.Next(100000, 999999);
         }
 
@@ -368,12 +352,10 @@ namespace CameraClient
         {
             if (random.NextDouble() < errorRate)
                 return "INVALID_CRYPTO";
-
             var bytes = new byte[32];
             random.NextBytes(bytes);
             return Convert.ToBase64String(bytes);
         }
-
         static string GetValidationError(string gtin, string sn, string crypto)
         {
             if (gtin.Contains("INVALID")) return "Неверный GTIN";
@@ -381,7 +363,6 @@ namespace CameraClient
             if (crypto.Contains("INVALID")) return "Неверный криптокод";
             return "OK";
         }
-
         static async Task SendDataToMasterAppAsync(string gtin, string sn, string crypto, bool isValid, string validationResult)
         {
             if (_masterAppClient == null || _masterAppClient.State != WebSocketState.Open)
@@ -402,7 +383,6 @@ namespace CameraClient
                     ValidationResult = validationResult,
                     Timestamp = DateTime.Now
                 };
-
                 var json = JsonSerializer.Serialize(data);
                 Console.WriteLine($"[Camera {_cameraId}] Отправка в MasterApp: {json}");
                 var bytes = Encoding.UTF8.GetBytes(json);

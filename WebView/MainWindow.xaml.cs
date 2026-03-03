@@ -258,7 +258,7 @@ namespace WebView
                 {
                     case ConnectionState.Connected:
                         WsIndicator.Fill = new SolidColorBrush(Color.FromRgb(0, 255, 136));
-                        WsIndicator.Effect = new System.Windows.Media.Effects.DropShadowEffect
+                        WsIndicator.Effect = new System.Windows.Media.Effects.DropShadowEffect  
                         {
                             Color = Color.FromRgb(0, 255, 136),
                             BlurRadius = 10

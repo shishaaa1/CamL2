@@ -90,13 +90,10 @@ namespace MasterApp
                 }
             }
 
-            // Отправка результата внешнему клиенту
             if (_resultServer != null)
             {
                 await _resultServer.SendResultAsync(result);
             }
-
-            // Отправка обновлённых данных в WebView (только если клиент подключён)
             if (_webViewSocket != null && _webViewSocket.State == WebSocketState.Open)
             {
                 Console.WriteLine($"[FrameProcessor] Отправка {result.Messages.Count} сообщений в WebView");
@@ -139,24 +136,20 @@ namespace MasterApp
                 
                 if (path == "/ws")
                 {
-                    // Подключение WebView интерфейса
                     await HandleWebViewConnectionAsync(context);
                 }
                 else if (path.StartsWith("/camera/"))
                 {
-                    // Подключение камеры
                     await HandleCameraConnectionAsync(context);
                 }
                 else
                 {
-                    // Неизвестный путь - 404
                     context.Response.StatusCode = 404;
                     context.Response.Close();
                 }
             }
             else
             {
-                // Обычный HTTP запрос - возвращаем 404
                 context.Response.StatusCode = 404;
                 context.Response.Close();
             }
@@ -199,16 +192,12 @@ namespace MasterApp
             {
                 var webSocketContext = await context.AcceptWebSocketAsync(null);
                 var cameraSocket = webSocketContext.WebSocket;
-
                 lock (_cameraSockets)
                 {
                     _cameraSockets.Add(cameraSocket);
                 }
-
                 var cameraId = context.Request.Url?.AbsolutePath.Replace("/camera/", "") ?? "?";
                 Console.WriteLine($"[WebSocket] Камера {cameraId} подключена к WebSocket. Всего подключений: {_cameraSockets.Count}");
-
-                // Важно: ожидаем завершения приёма сообщений, иначе сокет закроется
                 await ReceiveCameraMessagesAsync(cameraSocket, cameraId);
             }
             catch (Exception ex)

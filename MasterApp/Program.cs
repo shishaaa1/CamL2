@@ -55,51 +55,33 @@ namespace MasterApp
                 AgentLog("M1", "MasterApp/Program.cs:Main", "Configuration loaded", null, "pre");
 
                 Console.WriteLine("Запуск Мастер-приложения...");
-
-                // Получение настроек
                 var webSocketPort = _configuration.GetValue<int>("MasterApp:WebSocketPort", 8080);
                 var resultPort = _configuration.GetValue<int>("MasterApp:ResultSocketPort", 9000);
                 var frameWaitTimeMs = _configuration.GetValue<int>("MasterApp:FrameWaitTimeMs", 100);
                 var responseTimeoutMs = _configuration.GetValue<int>("MasterApp:ResponseTimeoutMs", 30);
-
                 var gtinErrorRate = _configuration.GetValue<double>("Validation:GtinErrorRate", 0.01);
                 var snErrorRate = _configuration.GetValue<double>("Validation:SerialNumberErrorRate", 0.0005);
                 var cryptoErrorRate = _configuration.GetValue<double>("Validation:CryptoFormatErrorRate", 0.00001);
-
                 AgentLog("M2", "MasterApp/Program.cs:Main", "Settings loaded", new { webSocketPort, resultPort, frameWaitTimeMs, responseTimeoutMs }, "pre");
-
-                // Случайный выбор главной камеры
                 var masterCameraId = SelectRandomMasterCamera();
                 Console.WriteLine($"Главная камера выбрана случайно: Камера #{masterCameraId}");
                 AgentLog("M4", "MasterApp/Program.cs:Main", "Master camera selected", new { masterCameraId }, "pre");
-
-                // Инициализация сервисов
                 _frameProcessor = new FrameProcessor(frameWaitTimeMs, responseTimeoutMs);
                 _validationService = new ValidationService(gtinErrorRate, snErrorRate, cryptoErrorRate);
                 _resultServer = new ResultSocketServer(resultPort);
-
-                // Запуск сервера результатов
                 _resultServer.Start();
                 AgentLog("M3", "MasterApp/Program.cs:Main", "Result server started", new { resultPort }, "pre");
-
-                // Запуск WebSocket сервера для WebView
                 _webSocketServer = new WebSocketServer(webSocketPort, masterCameraId, _frameProcessor, _validationService, _resultServer);
                 _webSocketServer.Start();
                 Console.WriteLine($"WebSocket сервер запущен на порту {webSocketPort}");
                 AgentLog("M3", "MasterApp/Program.cs:Main", "WebSocket server started", new { webSocketPort }, "pre");
-
-                // Запуск камер
                 var cameraProcesses = StartCamerasAsync(masterCameraId, webSocketPort);
                 Console.WriteLine($"Запущено {cameraProcesses.Count} камер(ы)");
                 AgentLog("M4", "MasterApp/Program.cs:Main", "Cameras started", new { count = cameraProcesses.Count }, "pre");
-
-                // Запуск WPF окна напрямую
                 _mainWindow = new MainWindow();
                 AgentLog("M5", "MasterApp/Program.cs:Main", "MainWindow created", null, "pre");
                 _mainWindow.ShowDialog();
                 AgentLog("M5", "MasterApp/Program.cs:Main", "MainWindow closed", null, "pre");
-
-                // Остановка камер при выходе
                 foreach (var process in cameraProcesses)
                 {
                     if (!process.HasExited)
@@ -129,16 +111,13 @@ namespace MasterApp
         static int SelectRandomMasterCamera()
         {
             var random = new Random();
-            return random.Next(1, 5); // 1-4
+            return random.Next(1, 5);
         }
 
         static List<Process> StartCamerasAsync(int masterCameraId, int webSocketPort)
         {
             var cameraProcesses = new List<Process>();
             var camerasConfig = _configuration.GetSection("Cameras").GetChildren().ToList();
-
-            // Порт мастер-камеры берём из её конфигурации (SocketPort),
-            // все ведомые будут подключаться именно к нему.
             var masterCameraConfig = camerasConfig.First(c =>
                 int.Parse(c["Id"] ?? "0") == masterCameraId);
             var masterCameraPort = int.Parse(masterCameraConfig["SocketPort"] ?? "9001");
@@ -172,20 +151,12 @@ namespace MasterApp
                 var dbDatabase = cameraConfig["Database:Database"];
                 var dbUsername = cameraConfig["Database:Username"];
                 var dbPassword = cameraConfig["Database:Password"];
-
-                // Базовая директория MasterApp (...\MasterApp\bin\Debug\net8.0-windows\).
                 var baseDir = AppContext.BaseDirectory;
-                // Переходим к корню решения: ...\TestProject\
-                // Нужно подняться на 4 уровня: net8.0-windows -> Debug -> bin -> MasterApp -> TestProject
                 var solutionRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
-                // Путь к собранному CameraClient: ...\TestProject\CameraClient\bin\Debug\net8.0\
                 var cameraBinDir = Path.Combine(solutionRoot, "CameraClient", "bin", "Debug", "net8.0");
                 var cameraExePath = Path.Combine(cameraBinDir, "CameraClient.exe");
-
-                // Если CameraClient.exe не найден в отдельной папке, ищем в общей папке bin решения
                 if (!File.Exists(cameraExePath))
                 {
-                    // Альтернативный путь: ...\TestProject\bin\Debug\CameraClient\
                     var altCameraBinDir = Path.Combine(solutionRoot, "bin", "Debug", "CameraClient");
                     var altCameraExePath = Path.Combine(altCameraBinDir, "CameraClient.exe");
                     if (File.Exists(altCameraExePath))

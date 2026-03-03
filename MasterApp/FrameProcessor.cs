@@ -73,8 +73,6 @@ namespace MasterApp
             if (_currentFrame.Count > 0)
             {
                 _frameCounter++;
-
-                // Создаём результат фрейма
                 var result = new FrameResult
                 {
                     FrameNumber = _frameCounter,
@@ -174,7 +172,7 @@ namespace MasterApp
                     {
                         var stream = client.GetStream();
                         await stream.WriteAsync(bytes);
-                        await stream.WriteAsync(new byte[] { 0x0A }); // newline
+                        await stream.WriteAsync(new byte[] { 0x0A });
                     }
                     else
                     {
@@ -186,8 +184,6 @@ namespace MasterApp
                     disconnectedClients.Add(client);
                 }
             }
-
-            // Удаляем отключённых клиентов
             foreach (var client in disconnectedClients)
             {
                 _clients.Remove(client);
@@ -222,24 +218,18 @@ namespace MasterApp
                 IsValid = true,
                 Errors = new List<string>()
             };
-
-            // Проверка GTIN
             var gtinValid = ValidateGtin(message.Gtin);
             if (!gtinValid)
             {
                 result.IsValid = false;
                 result.Errors.Add("Неверный GTIN");
             }
-
-            // Проверка Serial Number
             var snValid = ValidateSerialNumber(message.SerialNumber);
             if (!snValid)
             {
                 result.IsValid = false;
                 result.Errors.Add("Неверный серийный номер");
             }
-
-            // Проверка криптокода
             var cryptoValid = ValidateCryptoCode(message.CryptoCode);
             if (!cryptoValid)
             {
@@ -256,16 +246,10 @@ namespace MasterApp
         {
             if (string.IsNullOrEmpty(gtin))
                 return false;
-
-            // Проверка на "кривой" GTIN (симуляция ошибки БД)
             if (gtin.Contains("INVALID"))
                 return false;
-
-            // GTIN-14 должен содержать 14 цифр
             if (gtin.Length != 14 || !gtin.All(char.IsDigit))
                 return false;
-
-            // Проверка контрольной цифры
             return ValidateGtinCheckDigit(gtin);
         }
 
@@ -287,8 +271,6 @@ namespace MasterApp
 
             if (serialNumber.Contains("INVALID"))
                 return false;
-
-            // Простая проверка формата SN
             return serialNumber.StartsWith("SN") && serialNumber.Length >= 8;
         }
 
@@ -299,8 +281,6 @@ namespace MasterApp
 
             if (cryptoCode.Contains("INVALID"))
                 return false;
-
-            // Криптокод должен быть Base64
             try
             {
                 var bytes = Convert.FromBase64String(cryptoCode);
