@@ -6,7 +6,9 @@
         xmlns:local="clr-namespace:WebView"
         mc:Ignorable="d"
         Title="Мастер Камера - Мониторинг" 
-        Height="750" Width="1300"
+        Height="600" Width="800"
+        MinHeight="600"
+        MinWidth="800"
         WindowStartupLocation="CenterScreen"
         Icon="/WebView;component/Images/cam.png"
         Background="#1a1a2e">
@@ -427,7 +429,7 @@
                                    Margin="0,0,0,15"/>
                         
                         <UniformGrid Columns="2" Rows="2">
-                            <Border Background="#0f3460" CornerRadius="10" Padding="10">
+                            <Border Background="#0f3460" CornerRadius="10" Padding="10" Margin="5">
                                 <StackPanel>
                                     <TextBlock x:Name="TotalMessagesText" 
                                                Text="0" 
@@ -441,8 +443,8 @@
                                                HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
-                            
-                            <Border Background="#0f3460" CornerRadius="10" Padding="10">
+
+                            <Border Background="#0f3460" CornerRadius="10" Padding="10" Margin="5">
                                 <StackPanel>
                                     <TextBlock x:Name="ValidMessagesText" 
                                                Text="0" 
@@ -456,8 +458,8 @@
                                                HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
-                            
-                            <Border Background="#0f3460" CornerRadius="10" Padding="10">
+
+                            <Border Background="#0f3460" CornerRadius="10" Padding="10" Margin="5">
                                 <StackPanel>
                                     <TextBlock x:Name="InvalidMessagesText" 
                                                Text="0" 
@@ -471,8 +473,8 @@
                                                HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
-                            
-                            <Border Background="#0f3460" CornerRadius="10" Padding="10">
+
+                            <Border Background="#0f3460" CornerRadius="10" Padding="10" Margin="5">
                                 <StackPanel>
                                     <TextBlock x:Name="MessagesPerSecText" 
                                                Text="0" 

@@ -10,6 +10,9 @@ namespace MasterApp
     {
         private static IConfiguration _configuration = null!;
         private static WebSocketServer? _webSocketServer;
+        private static FrameProcessor? _frameProcessor;
+        private static ValidationService? _validationService;
+        private static ResultSocketServer? _resultServer;
         private static MainWindow? _mainWindow;
 
         [STAThread]
@@ -21,14 +24,43 @@ namespace MasterApp
                 .Build();
 
             Console.WriteLine("Запуск Мастер-приложения...");
+
+            // Получение настроек
             var webSocketPort = _configuration.GetValue<int>("MasterApp:WebSocketPort", 8080);
-            _webSocketServer = new WebSocketServer(webSocketPort);
+            var resultPort = _configuration.GetValue<int>("MasterApp:ResultSocketPort", 9000);
+            var frameWaitTimeMs = _configuration.GetValue<int>("MasterApp:FrameWaitTimeMs", 100);
+            var responseTimeoutMs = _configuration.GetValue<int>("MasterApp:ResponseTimeoutMs", 30);
+            
+            var gtinErrorRate = _configuration.GetValue<double>("Validation:GtinErrorRate", 0.01);
+            var snErrorRate = _configuration.GetValue<double>("Validation:SerialNumberErrorRate", 0.0005);
+            var cryptoErrorRate = _configuration.GetValue<double>("Validation:CryptoFormatErrorRate", 0.00001);
+
+            // Инициализация сервисов
+            _frameProcessor = new FrameProcessor(frameWaitTimeMs, responseTimeoutMs);
+            _validationService = new ValidationService(gtinErrorRate, snErrorRate, cryptoErrorRate);
+            _resultServer = new ResultSocketServer(resultPort);
+
+            // Запуск сервера результатов
+            _resultServer.Start();
+
+            // Запуск WebSocket сервера для WebView
+            _webSocketServer = new WebSocketServer(webSocketPort, _frameProcessor, _validationService, _resultServer);
             _webSocketServer.Start();
             Console.WriteLine($"WebSocket сервер запущен на порту {webSocketPort}");
-            var cameraProcesses = StartCamerasAsync();
+
+            // Случайный выбор главной камеры
+            var masterCameraId = SelectRandomMasterCamera();
+            Console.WriteLine($"Главная камера выбрана случайно: Камера #{masterCameraId}");
+
+            // Запуск камер
+            var cameraProcesses = StartCamerasAsync(masterCameraId);
             Console.WriteLine($"Запущено {cameraProcesses.Count} камер(ы)");
+
+            // Запуск WPF окна напрямую
             _mainWindow = new MainWindow();
             _mainWindow.ShowDialog();
+
+            // Остановка камер при выходе
             foreach (var process in cameraProcesses)
             {
                 if (!process.HasExited)
@@ -38,41 +70,49 @@ namespace MasterApp
                 }
             }
 
-            _webSocketServer.Stop();
+            _resultServer?.Stop();
+            _webSocketServer?.Stop();
+            _frameProcessor?.Stop();
         }
 
-        static List<Process> StartCamerasAsync()
+        /// <summary>
+        /// Случайный выбор главной камеры среди 4
+        /// </summary>
+        static int SelectRandomMasterCamera()
+        {
+            var random = new Random();
+            return random.Next(1, 5); // 1-4
+        }
+
+        static List<Process> StartCamerasAsync(int masterCameraId)
         {
             var cameraProcesses = new List<Process>();
             var camerasConfig = _configuration.GetSection("Cameras").GetChildren().ToList();
-            var masterConfig = camerasConfig.FirstOrDefault(c => c["IsMaster"] == "True");
-            if (masterConfig != null)
+
+            foreach (var cameraConfig in camerasConfig)
             {
-                var process = StartCameraProcessAsync(masterConfig);
-                if (process != null)
-                    cameraProcesses.Add(process);
-                Thread.Sleep(500);
-            }
-            var slaveConfigs = camerasConfig.Where(c => c["IsMaster"] != "True").ToList();
-            foreach (var cameraConfig in slaveConfigs)
-            {
-                var process = StartCameraProcessAsync(cameraConfig);
-                if (process != null)
-                    cameraProcesses.Add(process);
+                var id = cameraConfig["Id"];
+                var isMaster = int.Parse(id) == masterCameraId;
                 
+                var process = StartCameraProcessAsync(cameraConfig, isMaster);
+                if (process != null)
+                {
+                    cameraProcesses.Add(process);
+                    Console.WriteLine($"Запущена камера {id} (Master={isMaster})");
+                }
+
                 Thread.Sleep(100);
             }
 
             return cameraProcesses;
         }
 
-        static Process? StartCameraProcessAsync(IConfigurationSection cameraConfig)
+        static Process? StartCameraProcessAsync(IConfigurationSection cameraConfig, bool isMaster)
         {
             try
             {
                 var id = cameraConfig["Id"];
                 var port = cameraConfig["SocketPort"];
-                var isMaster = cameraConfig["IsMaster"] == "True";
                 var dbHost = cameraConfig["Database:Host"];
                 var dbPort = cameraConfig["Database:Port"];
                 var dbDatabase = cameraConfig["Database:Database"];
@@ -93,7 +133,6 @@ namespace MasterApp
                 };
 
                 process.Start();
-                Console.WriteLine($"Запущена камера {id} (Master={isMaster}) на порту {port}");
                 
                 return process;
             }

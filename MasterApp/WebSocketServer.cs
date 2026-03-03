@@ -14,30 +14,79 @@ namespace MasterApp
         private readonly int _port;
         private WebSocket? _webSocket;
         private bool _isRunning;
+        private readonly FrameProcessor? _frameProcessor;
+        private readonly ValidationService? _validationService;
+        private readonly ResultSocketServer? _resultServer;
 
         public event EventHandler<CameraMessageData>? MessageReceived;
         public event EventHandler? ClientConnected;
         public event EventHandler? ClientDisconnected;
 
-        public WebSocketServer(int port)
+        public WebSocketServer(int port, FrameProcessor? frameProcessor = null, ValidationService? validationService = null, ResultSocketServer? resultServer = null)
         {
             _port = port;
             _httpListener = new HttpListener();
             _httpListener.Prefixes.Add($"http://localhost:{port}/");
+            _frameProcessor = frameProcessor;
+            _validationService = validationService;
+            _resultServer = resultServer;
         }
 
         public void Start()
         {
             _isRunning = true;
             _httpListener.Start();
+            
+            // Подписка на обработку фреймов
+            if (_frameProcessor != null)
+            {
+                _frameProcessor.FrameProcessed += OnFrameProcessed;
+                _frameProcessor.Start();
+            }
+
             Task.Run(() => ListenAsync());
         }
 
         public void Stop()
         {
             _isRunning = false;
+            
+            if (_frameProcessor != null)
+            {
+                _frameProcessor.FrameProcessed -= OnFrameProcessed;
+                _frameProcessor.Stop();
+            }
+
             _httpListener.Stop();
-            _webSocket?.CloseAsync(WebSocketCloseStatus.NormalClosure, "Server stopping", CancellationToken.None).Wait();
+            _webSocket?.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None).Wait();
+        }
+
+        private async void OnFrameProcessed(object? sender, FrameResult result)
+        {
+            // Валидация каждого сообщения в фрейме
+            foreach (var message in result.Messages)
+            {
+                if (_validationService != null)
+                {
+                    var validationResult = _validationService.Validate(message);
+                    message.IsValid = validationResult.IsValid;
+                    message.ValidationResult = validationResult.ResultMessage;
+                }
+            }
+
+            // Отправка результата внешнему клиенту
+            if (_resultServer != null)
+            {
+                await _resultServer.SendResultAsync(result);
+            }
+
+            // Отправка обновлённых данных в WebView
+            foreach (var message in result.Messages)
+            {
+                await SendAsync(message);
+            }
+
+            Console.WriteLine($"Фрейм #{result.FrameNumber} обработан за {result.ProcessingTimeMs} мс ({result.Messages.Count} сообщений)");
         }
 
         private async Task ListenAsync()
@@ -65,6 +114,7 @@ namespace MasterApp
             }
             else
             {
+                // Обычный HTTP запрос - возвращаем 404
                 context.Response.StatusCode = 404;
                 context.Response.Close();
             }
@@ -124,6 +174,9 @@ namespace MasterApp
                         if (messageData != null)
                         {
                             MessageReceived?.Invoke(this, messageData);
+                            
+                            // Добавляем сообщение в обработчик фреймов
+                            _frameProcessor?.AddMessage(messageData);
                         }
                     }
                 }
