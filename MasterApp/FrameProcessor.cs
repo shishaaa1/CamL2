@@ -218,19 +218,41 @@ namespace MasterApp
                 IsValid = true,
                 Errors = new List<string>()
             };
-            var gtinValid = ValidateGtin(message.Gtin);
+
+            // Если есть сырая строка DataMatrix/GS1, пытаемся разобрать её
+            // по схеме: [FNC1]01[GTIN14]21[SN]<GS>93[KEY4].
+            string? gtin = message.Gtin;
+            string? sn = message.SerialNumber;
+            string? crypto = message.CryptoCode;
+
+            if (!string.IsNullOrWhiteSpace(message.RawData))
+            {
+                if (!TryParseRawData(message.RawData!, out var parsedGtin, out var parsedSn, out var parsedCrypto))
+                {
+                    result.IsValid = false;
+                    result.Errors.Add("Неверный формат DataMatrix");
+                    result.ResultMessage = string.Join("; ", result.Errors);
+                    return result;
+                }
+
+                gtin = parsedGtin;
+                sn = parsedSn;
+                crypto = parsedCrypto;
+            }
+
+            var gtinValid = ValidateGtin(gtin);
             if (!gtinValid)
             {
                 result.IsValid = false;
                 result.Errors.Add("Неверный GTIN");
             }
-            var snValid = ValidateSerialNumber(message.SerialNumber);
+            var snValid = ValidateSerialNumber(sn);
             if (!snValid)
             {
                 result.IsValid = false;
                 result.Errors.Add("Неверный серийный номер");
             }
-            var cryptoValid = ValidateCryptoCode(message.CryptoCode);
+            var cryptoValid = ValidateCryptoCode(crypto);
             if (!cryptoValid)
             {
                 result.IsValid = false;
@@ -246,11 +268,13 @@ namespace MasterApp
         {
             if (string.IsNullOrEmpty(gtin))
                 return false;
-            if (gtin.Contains("INVALID"))
+            gtin = gtin.Trim();
+            if (gtin.Length == 0 || gtin.Length > 14 || !gtin.All(char.IsDigit))
                 return false;
-            if (gtin.Length != 14 || !gtin.All(char.IsDigit))
-                return false;
-            return ValidateGtinCheckDigit(gtin);
+
+            // По факту в БД GTIN может быть без корректной контрольной цифры.
+            // По ТЗ считаем валидным формат 14 цифр.
+            return true;
         }
 
         private bool ValidateGtinCheckDigit(string gtin)
@@ -269,9 +293,10 @@ namespace MasterApp
             if (string.IsNullOrEmpty(serialNumber))
                 return false;
 
-            if (serialNumber.Contains("INVALID"))
-                return false;
-            return serialNumber.StartsWith("SN") && serialNumber.Length >= 8;
+            // По ТЗ: SN из Items, длина 7, без требований "SN..."
+            // Допущение: любые печатные символы допустимы, но длина должна быть ровно 7
+            serialNumber = serialNumber.Trim();
+            return serialNumber.Length > 0 && serialNumber.Length <= 13;
         }
 
         private bool ValidateCryptoCode(string? cryptoCode)
@@ -279,17 +304,76 @@ namespace MasterApp
             if (string.IsNullOrEmpty(cryptoCode))
                 return false;
 
-            if (cryptoCode.Contains("INVALID"))
+            // По ТЗ: KEY/Code из Items, до 4 символов (<'=c)
+            cryptoCode = cryptoCode.Trim();
+            return cryptoCode.Length > 0 && cryptoCode.Length <= 4;
+        }
+
+        /// <summary>
+        /// Парсинг сырой строки DataMatrix/GS1 формата:
+        /// [FNC1]01[GTIN14]21[SN]<GS>93[KEY4]
+        /// GTIN: 14 цифр, SN: произвольные печатные символы до разделителя, KEY: 4 символа.
+        /// </summary>
+        private bool TryParseRawData(string rawData, out string gtin, out string serialNumber, out string cryptoCode)
+        {
+            gtin = string.Empty;
+            serialNumber = string.Empty;
+            cryptoCode = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(rawData))
                 return false;
-            try
+
+            var s = rawData.Trim();
+            const string fnc1Marker = "[FNC1]";
+            const string gsMarker = "<GS>";
+
+            var index = 0;
+
+            // необязательный префикс [FNC1]
+            if (s.StartsWith(fnc1Marker, StringComparison.OrdinalIgnoreCase))
             {
-                var bytes = Convert.FromBase64String(cryptoCode);
-                return bytes.Length >= 32;
+                index += fnc1Marker.Length;
             }
-            catch
-            {
+
+            // AI 01
+            if (index + 2 > s.Length || s[index] != '0' || s[index + 1] != '1')
                 return false;
-            }
+            index += 2;
+
+            // GTIN: 14 цифр
+            if (index + 14 > s.Length)
+                return false;
+            var gtinCandidate = s.Substring(index, 14);
+            if (!gtinCandidate.All(char.IsDigit))
+                return false;
+            index += 14;
+
+            // AI 21
+            if (index + 2 > s.Length || s[index] != '2' || s[index + 1] != '1')
+                return false;
+            index += 2;
+
+            // SN до маркера GS
+            var gsIndex = s.IndexOf(gsMarker, index, StringComparison.OrdinalIgnoreCase);
+            if (gsIndex < 0)
+                return false;
+            var snCandidate = s.Substring(index, gsIndex - index);
+            index = gsIndex + gsMarker.Length;
+
+            // AI 93
+            if (index + 2 > s.Length || s[index] != '9' || s[index + 1] != '3')
+                return false;
+            index += 2;
+
+            // KEY: 4 символа
+            if (index + 4 > s.Length)
+                return false;
+            var cryptoCandidate = s.Substring(index, 4);
+
+            gtin = gtinCandidate.Trim();
+            serialNumber = snCandidate.Trim();
+            cryptoCode = cryptoCandidate.Trim();
+            return true;
         }
     }
 

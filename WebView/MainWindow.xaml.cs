@@ -233,8 +233,11 @@ namespace WebView
                     camera.InvalidCount++;
             }
 
-            var displayData = !string.IsNullOrEmpty(data.Gtin) ? data.Gtin : 
-                              (!string.IsNullOrEmpty(data.RawData) ? data.RawData : "N/A");
+            // В БД GTIN обычно один и тот же, поэтому для UI важнее показывать полную строку (или хотя бы SN/KEY).
+            var displayData = !string.IsNullOrEmpty(data.RawData) ? data.RawData :
+                              (!string.IsNullOrEmpty(data.Gtin) || !string.IsNullOrEmpty(data.SerialNumber) || !string.IsNullOrEmpty(data.CryptoCode))
+                                  ? $"{data.Gtin} {data.SerialNumber} {data.CryptoCode}".Trim()
+                                  : "N/A";
 
             var message = new MessageViewModel
             {

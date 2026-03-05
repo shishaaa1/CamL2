@@ -7,94 +7,87 @@
         mc:Ignorable="d"
         Title="Мастер Камера - Мониторинг" 
         Height="900" Width="1200"
-        MinHeight="900"
-        MinWidth="1200"
+        MinHeight="900" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         Icon="/WebView;component/Images/cam.png"
-        Background="#1a1a2e">
-    
+        Background="#0F0F1A"
+        FontFamily="Segoe UI">
+
     <Window.Resources>
-        <!-- Стили для карточек камер -->
         <Style x:Key="CameraCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="#16213e"/>
-            <Setter Property="CornerRadius" Value="15"/>
+            <Setter Property="Background" Value="#1A1A2E"/>
+            <Setter Property="CornerRadius" Value="16"/>
             <Setter Property="Margin" Value="10"/>
             <Setter Property="Padding" Value="15"/>
-            <Setter Property="BorderBrush" Value="#00d9ff"/>
+            <Setter Property="BorderBrush" Value="#2A2A4A"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#000000" BlurRadius="15" Opacity="0.3" ShadowDepth="5"/>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <!-- Стили для статусов -->
         <Style x:Key="StatusIndicatorStyle" TargetType="Ellipse">
-            <Setter Property="Width" Value="12"/>
-            <Setter Property="Height" Value="12"/>
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Height" Value="10"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+
+        <Style x:Key="StatPanelStyle" TargetType="Border">
+            <Setter Property="Background" Value="#22223B"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="12"/>
             <Setter Property="Margin" Value="5"/>
         </Style>
     </Window.Resources>
-    
-    <Grid>
+
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        
-        <!-- Заголовок -->
-        <Border Grid.Row="0" Background="#0f3460" CornerRadius="0,0,15,15" Margin="20,20,20,0">
-            <StackPanel Margin="20">
-                <TextBlock Text="📷 Мастер Камера" 
-                           FontSize="32" 
-                           FontWeight="Bold"
-                           HorizontalAlignment="Center"
-                           Foreground="#00d9ff"/>
-                
-                <!-- Строка состояния -->
-                <StackPanel Orientation="Horizontal" 
-                            HorizontalAlignment="Center" 
-                            Margin="0,15,0,0">
-                    
-                    <!-- WebSocket статус -->
-                    <Border Background="#1a1a2e" CornerRadius="8" Padding="15,8">
-                        <StackPanel Orientation="Horizontal">
-                            <Ellipse x:Name="WsIndicator" 
-                                     Style="{StaticResource StatusIndicatorStyle}"
-                                     Fill="#ff4757"/>
-                            <TextBlock x:Name="WsStatusText" 
-                                       Text="Отключено" 
-                                       VerticalAlignment="Center"
-                                       Foreground="White"
-                                       Margin="5,0,0,0"/>
+
+        <Border Grid.Row="0" Background="#161625" CornerRadius="20" Margin="10,10,10,5" Padding="25,15">
+            <Border.Effect>
+                <DropShadowEffect Color="#000000" BlurRadius="20" Opacity="0.4" ShadowDepth="4"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="📷 Мастер Камера" FontSize="28" FontWeight="ExtraBold" VerticalAlignment="Center" Foreground="#00D9FF"/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Border Background="#25253D" CornerRadius="10" Padding="12,8" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Ellipse x:Name="WsIndicator" Style="{StaticResource StatusIndicatorStyle}" Fill="#FF4757"/>
+                            <TextBlock x:Name="WsStatusText" Text="Отключено" VerticalAlignment="Center" Foreground="#E0E0E0" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Border>
-                    
-                    <!-- Время -->
-                    <Border Background="#1a1a2e" CornerRadius="8" Padding="15,8" Margin="15,0,0,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🕐 " FontSize="16" VerticalAlignment="Center"/>
-                            <TextBlock x:Name="CurrentTimeText" 
-                                       Text="--:--:--" 
-                                       VerticalAlignment="Center"
-                                       Foreground="White"/>
+
+                    <Border Background="#25253D" CornerRadius="10" Padding="12,8" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Фрейм: " FontSize="14" VerticalAlignment="Center" Foreground="#A0A0B0"/>
+                            <TextBlock x:Name="CurrentFrameText" Text="0" VerticalAlignment="Center" Foreground="#00FF88" FontWeight="Bold" FontSize="15" Margin="5,0,0,0"/>
                         </StackPanel>
                     </Border>
-                    
-                    <!-- Текущий фрейм -->
-                    <Border Background="#1a1a2e" CornerRadius="8" Padding="15,8" Margin="15,0,0,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="📊 Фрейм: " FontSize="16" VerticalAlignment="Center"/>
-                            <TextBlock x:Name="CurrentFrameText" 
-                                       Text="0" 
-                                       VerticalAlignment="Center"
-                                       Foreground="#00ff88"
-                                       FontWeight="Bold"/>
+
+                    <Border Background="#25253D" CornerRadius="10" Padding="12,8">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="🕐 " FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="CurrentTimeText" Text="--:--:--" VerticalAlignment="Center" Foreground="#E0E0E0" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
-            </StackPanel>
+            </Grid>
         </Border>
-        
-        <!-- Сетка камер -->
-        <ItemsControl x:Name="CamerasItemsControl" Grid.Row="1">
+
+        <ItemsControl x:Name="CamerasItemsControl" Grid.Row="1" Margin="0,10,0,5">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <UniformGrid Columns="4"/>
@@ -109,33 +102,26 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            
-                            <!-- Заголовок камеры -->
-                            <Grid Grid.Row="0">
+
+                            <Grid Grid.Row="0" Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                
-                                <TextBlock Grid.Column="0" 
-                                           Text="{Binding Title}" 
-                                           FontSize="18" 
-                                           FontWeight="Bold"
-                                           Foreground="White"/>
-                                
-                                <Border Grid.Column="1" 
-                                        CornerRadius="12" 
-                                        Padding="10,4">
+
+                                <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+
+                                <Border Grid.Column="1" CornerRadius="10" Padding="12,4">
                                     <Border.Style>
                                         <Style TargetType="Border">
-                                            <Setter Property="Background" Value="#333"/>
+                                            <Setter Property="Background" Value="#2A2A4A"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsMaster}" Value="True">
                                                     <Setter Property="Background">
                                                         <Setter.Value>
                                                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                <GradientStop Color="#00d9ff" Offset="0"/>
-                                                                <GradientStop Color="#00ff88" Offset="1"/>
+                                                                <GradientStop Color="#00D9FF" Offset="0"/>
+                                                                <GradientStop Color="#00FF88" Offset="1"/>
                                                             </LinearGradientBrush>
                                                         </Setter.Value>
                                                     </Setter>
@@ -143,15 +129,15 @@
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <TextBlock x:Name="BadgeText" Padding="10,4" FontWeight="Bold" FontSize="11">
+                                    <TextBlock x:Name="BadgeText" FontWeight="Bold" FontSize="11" VerticalAlignment="Center">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="Text" Value="📷 Ведомая"/>
-                                                <Setter Property="Foreground" Value="White"/>
+                                                <Setter Property="Text" Value="ВЕДОМАЯ"/>
+                                                <Setter Property="Foreground" Value="#A0A0B0"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsMaster}" Value="True">
                                                         <Setter Property="Text" Value="👑 МАСТЕР"/>
-                                                        <Setter Property="Foreground" Value="Black"/>
+                                                        <Setter Property="Foreground" Value="#0F0F1A"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -159,40 +145,37 @@
                                     </TextBlock>
                                 </Border>
                             </Grid>
-                            
-                            <!-- Статус подключения -->
-                            <Border Grid.Row="1" 
-                                    Background="#0f3460" 
-                                    CornerRadius="6" 
-                                    Margin="0,10,0,10"
-                                    Padding="8">
+
+                            <Border Grid.Row="1" Background="#121220" CornerRadius="8" Padding="10" Margin="0,5,0,10">
                                 <StackPanel Orientation="Horizontal">
-                                    <Ellipse Width="12" Height="12" Margin="5">
+                                    <Ellipse>
                                         <Ellipse.Style>
-                                            <Style TargetType="Ellipse">
+                                            <Style TargetType="Ellipse" BasedOn="{StaticResource StatusIndicatorStyle}">
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsOnline}" Value="True">
-                                                        <Setter Property="Fill" Value="#00ff88"/>
+                                                        <Setter Property="Fill" Value="#00FF88"/>
                                                         <Setter Property="Effect">
                                                             <Setter.Value>
-                                                                <DropShadowEffect Color="#00ff88" BlurRadius="10"/>
+                                                                <DropShadowEffect Color="#00FF88" BlurRadius="8" ShadowDepth="0"/>
                                                             </Setter.Value>
                                                         </Setter>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding IsOnline}" Value="False">
-                                                        <Setter Property="Fill" Value="#ff4757"/>
+                                                        <Setter Property="Fill" Value="#FF4757"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </Ellipse.Style>
                                     </Ellipse>
-                                    <TextBlock VerticalAlignment="Center" Foreground="White">
+                                    <TextBlock VerticalAlignment="Center" FontWeight="Medium">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
                                                 <Setter Property="Text" Value="Оффлайн"/>
+                                                <Setter Property="Foreground" Value="#FF4757"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsOnline}" Value="True">
                                                         <Setter Property="Text" Value="Онлайн"/>
+                                                        <Setter Property="Foreground" Value="#00FF88"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -200,8 +183,7 @@
                                     </TextBlock>
                                 </StackPanel>
                             </Border>
-                            
-                            <!-- Статистика -->
+
                             <Grid Grid.Row="2">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -211,76 +193,32 @@
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                
-                                <!-- Всего сообщений -->
-                                <Border Grid.Row="0" Grid.Column="0" 
-                                        Background="#0f3460" 
-                                        CornerRadius="6" 
-                                        Margin="3">
+
+                                <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource StatPanelStyle}">
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding MessageCount}" 
-                                                   FontSize="20" 
-                                                   FontWeight="Bold"
-                                                   Foreground="#00d9ff"
-                                                   HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Сообщений" 
-                                                   FontSize="10" 
-                                                   Foreground="#aaa"
-                                                   HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding MessageCount}" FontSize="22" FontWeight="Bold" Foreground="#00D9FF" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Всего" FontSize="10" Foreground="#A0A0B0" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Border>
-                                
-                                <!-- Валидные -->
-                                <Border Grid.Row="0" Grid.Column="1" 
-                                        Background="#0f3460" 
-                                        CornerRadius="6" 
-                                        Margin="3">
+
+                                <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource StatPanelStyle}">
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding ValidCount}" 
-                                                   FontSize="20" 
-                                                   FontWeight="Bold"
-                                                   Foreground="#00ff88"
-                                                   HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Валидных" 
-                                                   FontSize="10" 
-                                                   Foreground="#aaa"
-                                                   HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding ValidCount}" FontSize="22" FontWeight="Bold" Foreground="#00FF88" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Валидных" FontSize="10" Foreground="#A0A0B0" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Border>
-                                
-                                <!-- Брак -->
-                                <Border Grid.Row="1" Grid.Column="0" 
-                                        Background="#0f3460" 
-                                        CornerRadius="6" 
-                                        Margin="3">
+
+                                <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource StatPanelStyle}">
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding InvalidCount}" 
-                                                   FontSize="20" 
-                                                   FontWeight="Bold"
-                                                   Foreground="#ff4757"
-                                                   HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Брак" 
-                                                   FontSize="10" 
-                                                   Foreground="#aaa"
-                                                   HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding InvalidCount}" FontSize="22" FontWeight="Bold" Foreground="#FF4757" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Брак" FontSize="10" Foreground="#A0A0B0" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Border>
-                                
-                                <!-- Процент успеха -->
-                                <Border Grid.Row="1" Grid.Column="1" 
-                                        Background="#0f3460" 
-                                        CornerRadius="6" 
-                                        Margin="3">
+
+                                <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource StatPanelStyle}">
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding SuccessPercent, StringFormat={}{0:F1}\%}" 
-                                                   FontSize="20" 
-                                                   FontWeight="Bold"
-                                                   Foreground="#ffa502"
-                                                   HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Успех" 
-                                                   FontSize="10" 
-                                                   Foreground="#aaa"
-                                                   HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding SuccessPercent, StringFormat={}{0:F1}\%}" FontSize="22" FontWeight="Bold" Foreground="#FFA502" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Успех" FontSize="10" Foreground="#A0A0B0" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Border>
                             </Grid>
@@ -289,240 +227,193 @@
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
-        
-        <!-- Панель сообщений и статистики -->
-        <Grid Grid.Row="2" Margin="20,10,20,20">
+
+        <Grid Grid.Row="2" Margin="10,5,10,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
-            
-            <!-- Список сообщений -->
-            <Border Grid.Column="0" 
-                    Background="#16213e" 
-                    CornerRadius="15" 
-                    Padding="15">
+
+            <Border Grid.Column="0" Background="#161625" CornerRadius="16" Padding="20" Margin="0,0,10,0">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" BlurRadius="15" Opacity="0.3" ShadowDepth="4"/>
+                </Border.Effect>
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                        <TextBlock Text="📨 Поток сообщений" 
-                                   FontSize="20" 
-                                   FontWeight="Bold"
-                                   Foreground="White"/>
-                        <Border Background="#333" 
-                                CornerRadius="5" 
-                                Padding="8,3" 
-                                Margin="10,0,0,0">
-                            <TextBlock x:Name="FrameTimerText" 
-                                       Text="Ожидание: 100 мс" 
-                                       Foreground="#ffa502"
-                                       FontSize="12"/>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,15">
+                        <TextBlock Text="📨 Поток сообщений" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                        <Border Background="#2A2A4A" CornerRadius="8" Padding="12,6" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock x:Name="FrameTimerText" Text="Ожидание: 100 мс" Foreground="#FFA502" FontSize="13" FontWeight="SemiBold"/>
                         </Border>
-                    </StackPanel>
-                    
-                    <DataGrid Grid.Row="1" 
-                              x:Name="MessagesDataGrid"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False"
-                              CanUserDeleteRows="False"
-                              CanUserResizeRows="False"
-                              CanUserSortColumns="False"
-                              IsReadOnly="True"
-                              Background="Transparent"
-                              BorderThickness="0"
-                              RowBackground="#0f3460"
-                              AlternatingRowBackground="#1a1a2e"
-                              HeadersVisibility="Column"
-                              GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="#333"
-                              VerticalGridLinesBrush="Transparent">
-                        <DataGrid.ColumnHeaderStyle>
-                            <Style TargetType="DataGridColumnHeader">
-                                <Setter Property="Background" Value="#00d9ff"/>
-                                <Setter Property="Foreground" Value="Black"/>
-                                <Setter Property="FontWeight" Value="Bold"/>
-                                <Setter Property="Padding" Value="10,8"/>
-                            </Style>
-                        </DataGrid.ColumnHeaderStyle>
-                        <DataGrid.CellStyle>
-                            <Style TargetType="DataGridCell">
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Padding" Value="10,6"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsSelected" Value="True">
-                                        <Setter Property="Background" Value="#00d9ff"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </DataGrid.CellStyle>
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Время" 
-                                                Binding="{Binding Time}" 
-                                                Width="80"/>
-                            <DataGridTextColumn Header="Камера"
-                                                Binding="{Binding CameraId}"
-                                                Width="70"/>
-                            <DataGridTextColumn Header="Данные" 
-                                                Binding="{Binding Data}" 
-                                                Width="300"/>
-                            <DataGridTemplateColumn Header="Статус" Width="100">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Border CornerRadius="5" Padding="8,4" HorizontalAlignment="Center">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsValid}" Value="True">
-                                                            <Setter Property="Background" Value="#00ff8833"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsValid}" Value="False">
-                                                            <Setter Property="Background" Value="#ff475733"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-                                            <TextBlock>
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
+                    </Grid>
+
+                    <Border Grid.Row="1" CornerRadius="10" ClipToBounds="True" Background="#1A1A2E" BorderBrush="#2A2A4A" BorderThickness="1">
+                        <DataGrid x:Name="MessagesDataGrid"
+                                  AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" 
+                                  CanUserResizeRows="False" CanUserSortColumns="False" IsReadOnly="True"
+                                  Background="Transparent" BorderThickness="0"
+                                  RowBackground="#1A1A2E" AlternatingRowBackground="#22223B"
+                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                  HorizontalGridLinesBrush="#2A2A4A" VerticalGridLinesBrush="Transparent">
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="#25253D"/>
+                                    <Setter Property="Foreground" Value="#00D9FF"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Padding" Value="15,12"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    <Setter Property="BorderBrush" Value="#33334C"/>
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Foreground" Value="#E0E0E0"/>
+                                    <Setter Property="Padding" Value="15,10"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="DataGridCell">
+                                                <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}">
+                                                    <ContentPresenter VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#00D9FF"/>
+                                            <Setter Property="Foreground" Value="#0F0F1A"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.CellStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="100"/>
+                                <DataGridTextColumn Header="ID" Binding="{Binding CameraId}" Width="60"/>
+                                <DataGridTextColumn Header="Данные" Binding="{Binding Data}" Width="*"/>
+                                <DataGridTemplateColumn Header="Статус" Width="120">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border CornerRadius="6" Padding="10,4" HorizontalAlignment="Left">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsValid}" Value="True">
-                                                                <Setter Property="Text" Value="✓ ВАЛИДНО"/>
-                                                                <Setter Property="Foreground" Value="#00ff88"/>
+                                                                <Setter Property="Background" Value="#1A00FF88"/>
+                                                                <Setter Property="BorderBrush" Value="#00FF88"/>
+                                                                <Setter Property="BorderThickness" Value="1"/>
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding IsValid}" Value="False">
-                                                                <Setter Property="Text" Value="✗ БРАК"/>
-                                                                <Setter Property="Foreground" Value="#ff4757"/>
+                                                                <Setter Property="Background" Value="#1AFF4757"/>
+                                                                <Setter Property="BorderBrush" Value="#FF4757"/>
+                                                                <Setter Property="BorderThickness" Value="1"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </Border>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="Результат" 
-                                                Binding="{Binding Result}" 
-                                                Width="150"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                                                </Border.Style>
+                                                <TextBlock FontWeight="SemiBold" FontSize="11">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsValid}" Value="True">
+                                                                    <Setter Property="Text" Value="✓ ВАЛИДНО"/>
+                                                                    <Setter Property="Foreground" Value="#00FF88"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsValid}" Value="False">
+                                                                    <Setter Property="Text" Value="✗ БРАК"/>
+                                                                    <Setter Property="Foreground" Value="#FF4757"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Результат" Binding="{Binding Result}" Width="200"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
                 </Grid>
             </Border>
-            
-            <!-- Правая панель -->
-            <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                <!-- Сводная статистика -->
-                <Border Background="#16213e" 
-                        CornerRadius="15" 
-                        Padding="15"
-                        Margin="0,0,0,10">
+
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Background="#161625" CornerRadius="16" Padding="20" Margin="0,0,0,10">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#000000" BlurRadius="15" Opacity="0.3" ShadowDepth="4"/>
+                    </Border.Effect>
                     <StackPanel>
-                        <TextBlock Text="📊 Статистика" 
-                                   FontSize="18" 
-                                   FontWeight="Bold"
-                                   Foreground="White"
-                                   Margin="0,0,0,15"/>
-                        
+                        <TextBlock Text="📊 Сводка" FontSize="20" FontWeight="Bold" Foreground="White" Margin="0,0,0,15"/>
+
                         <UniformGrid Columns="2" Rows="2">
-                            <Border Background="#0f3460" CornerRadius="10" Padding="10" Margin="5">
+                            <Border Style="{StaticResource StatPanelStyle}">
                                 <StackPanel>
-                                    <TextBlock x:Name="TotalMessagesText" 
-                                               Text="0" 
-                                               FontSize="28" 
-                                               FontWeight="Bold"
-                                               Foreground="#00d9ff"
-                                               HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Всего" 
-                                               FontSize="11" 
-                                               Foreground="#aaa"
-                                               HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="TotalMessagesText" Text="0" FontSize="28" FontWeight="Bold" Foreground="#00D9FF" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Всего сообщений" FontSize="11" Foreground="#A0A0B0" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="#0f3460" CornerRadius="10" Padding="10" Margin="5">
+                            <Border Style="{StaticResource StatPanelStyle}">
                                 <StackPanel>
-                                    <TextBlock x:Name="ValidMessagesText" 
-                                               Text="0" 
-                                               FontSize="28" 
-                                               FontWeight="Bold"
-                                               Foreground="#00ff88"
-                                               HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Валидных" 
-                                               FontSize="11" 
-                                               Foreground="#aaa"
-                                               HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="ValidMessagesText" Text="0" FontSize="28" FontWeight="Bold" Foreground="#00FF88" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Валидных" FontSize="11" Foreground="#A0A0B0" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="#0f3460" CornerRadius="10" Padding="10" Margin="5">
+                            <Border Style="{StaticResource StatPanelStyle}">
                                 <StackPanel>
-                                    <TextBlock x:Name="InvalidMessagesText" 
-                                               Text="0" 
-                                               FontSize="28" 
-                                               FontWeight="Bold"
-                                               Foreground="#ff4757"
-                                               HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Брак" 
-                                               FontSize="11" 
-                                               Foreground="#aaa"
-                                               HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="InvalidMessagesText" Text="0" FontSize="28" FontWeight="Bold" Foreground="#FF4757" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Брак" FontSize="11" Foreground="#A0A0B0" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="#0f3460" CornerRadius="10" Padding="10" Margin="5">
+                            <Border Style="{StaticResource StatPanelStyle}">
                                 <StackPanel>
-                                    <TextBlock x:Name="MessagesPerSecText" 
-                                               Text="0" 
-                                               FontSize="28" 
-                                               FontWeight="Bold"
-                                               Foreground="#ffa502"
-                                               HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Сообщ/сек" 
-                                               FontSize="11" 
-                                               Foreground="#aaa"
-                                               HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="MessagesPerSecText" Text="0" FontSize="28" FontWeight="Bold" Foreground="#FFA502" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Сообщ / сек" FontSize="11" Foreground="#A0A0B0" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
                         </UniformGrid>
                     </StackPanel>
                 </Border>
-                
-                <!-- Журнал событий -->
-                <Border Background="#16213e" 
-                        CornerRadius="15" 
-                        Padding="15"
-                        VerticalAlignment="Stretch">
+
+                <Border Grid.Row="1" Background="#161625" CornerRadius="16" Padding="20">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#000000" BlurRadius="15" Opacity="0.3" ShadowDepth="4"/>
+                    </Border.Effect>
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        
-                        <TextBlock Grid.Row="0" 
-                                   Text="📋 Журнал событий" 
-                                   FontSize="18" 
-                                   FontWeight="Bold"
-                                   Foreground="White"
-                                   Margin="0,0,0,10"/>
-                        
-                        <ListBox Grid.Row="1" 
-                                 x:Name="LogListBox"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+
+                        <TextBlock Grid.Row="0" Text="📋 Журнал событий" FontSize="20" FontWeight="Bold" Foreground="White" Margin="0,0,0,15"/>
+
+                        <ListBox Grid.Row="1" x:Name="LogListBox" Background="Transparent" BorderThickness="0" 
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#0f3460" 
-                                            CornerRadius="5" 
-                                            Padding="8" 
-                                            Margin="0,2">
-                                        <TextBlock Text="{Binding Text}" 
-                                                   TextWrapping="Wrap">
+                                    <Border Background="#22223B" CornerRadius="6" Padding="12,10" Margin="0,0,5,8">
+                                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="13">
                                             <TextBlock.Foreground>
                                                 <SolidColorBrush Color="{Binding Color}"/>
                                             </TextBlock.Foreground>
@@ -533,7 +424,7 @@
                         </ListBox>
                     </Grid>
                 </Border>
-            </StackPanel>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

@@ -18,7 +18,7 @@ namespace CameraClient
         private static bool _isMaster;
         private static string _dbHost = "127.0.0.1";
         private static int _dbPort = 5432;
-        private static string _dbDatabase = "postgres";
+        private static string _dbDatabase = "postgres1";
         private static string _dbUsername = "postgres";
         private static string _dbPassword = "postgres";
         private static int _masterAppPort = 9000;
@@ -83,7 +83,7 @@ namespace CameraClient
             _isMaster = GetArgument(args, "--ismaster")?.ToLower() == "true";
             _dbHost = GetArgument(args, "--dbhost") ?? "127.0.0.1";
             _dbPort = int.Parse(GetArgument(args, "--dbport") ?? "5432");
-            _dbDatabase = GetArgument(args, "--dbdatabase") ?? "postgres";
+            _dbDatabase = GetArgument(args, "--dbdatabase") ?? "postgres1";
             _dbUsername = GetArgument(args, "--dbusername") ?? "postgres";
             _dbPassword = GetArgument(args, "--dbpassword") ?? "postgres";
             _masterAppPort = int.Parse(GetArgument(args, "--masterport") ?? "8080");
@@ -375,21 +375,39 @@ namespace CameraClient
         static string ApplyGtinError(string sourceGtin, Random random, double errorRate)
         {
             if (random.NextDouble() < errorRate)
-                return "INVALID_GTIN_" + random.Next(1000, 9999);
+            {
+                // GTIN должен быть строго 14 цифр. Делаем ошибку формата (нецифровой символ).
+                if (!string.IsNullOrEmpty(sourceGtin) && sourceGtin.Length == 14)
+                {
+                    var chars = sourceGtin.ToCharArray();
+                    chars[0] = 'X';
+                    return new string(chars);
+                }
+                return "X" + (sourceGtin ?? string.Empty);
+            }
             return sourceGtin;
         }
 
         static string ApplySerialError(string sourceSerial, Random random, double errorRate)
         {
             if (random.NextDouble() < errorRate)
-                return "INVALID_SN_" + random.Next(1000, 9999);
+            {
+                // SN должен быть длиной 7. Делаем ошибку длины (6 символов).
+                var s = (sourceSerial ?? string.Empty).Trim();
+                if (s.Length >= 6)
+                    return s.Substring(0, 6);
+                return (s + "XXXXXX").Substring(0, 6);
+            }
             return sourceSerial;
         }
 
         static string ApplyCryptoError(string sourceCrypto, Random random, double errorRate)
         {
             if (random.NextDouble() < errorRate)
-                return "INVALID_CRYPTO";
+            {
+                // Code должен быть длиной 4. Делаем ошибку длины.
+                return string.IsNullOrEmpty(sourceCrypto) ? "XXX" : sourceCrypto.Substring(0, Math.Max(0, sourceCrypto.Length - 1));
+            }
             return sourceCrypto;
         }
         static string GetValidationError(string gtin, string sn, string crypto)
@@ -409,9 +427,11 @@ namespace CameraClient
 
             try
             {
+                var raw = BuildGs1DataString(gtin, sn, crypto);
                 var data = new
                 {
                     CameraId = _cameraId,
+                    RawData = raw,
                     Gtin = gtin,
                     SerialNumber = sn,
                     CryptoCode = crypto,
@@ -433,6 +453,16 @@ namespace CameraClient
             {
                 Console.WriteLine($"[Camera {_cameraId}] Ошибка отправки в MasterApp: {ex.Message}");
             }
+        }
+
+        static string BuildGs1DataString(string gtin, string sn, string key)
+        {
+            // По ТЗ: [FNC:1] 01 [GTIN:14] 21 [SN:7] [GS1:1] 93 [KEY:4]
+            // Для отображения в UI используем текстовый маркер "<GS>" вместо ASCII 29.
+            var cleanGtin = (gtin ?? string.Empty).Trim();
+            var cleanSn = (sn ?? string.Empty).Trim();
+            var cleanKey = (key ?? string.Empty).Trim();
+            return $"[FNC1]01{cleanGtin}21{cleanSn}<GS>93{cleanKey}";
         }
     }
 }
